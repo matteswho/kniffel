@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0f1419" />
-  <meta name="description" content="Mobiler Kniffel-Spielbogen mit drei Spalten und Bonus-Tipp." />
+  <meta name="description" content="Mobiler Kniffel-Spielbogen mit drei Spalten." />
   <title>Kniffel · Spielbogen</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
@@ -31,17 +31,9 @@
       <div class="dice-row" id="diceRow"></div>
       <div class="dice-actions">
         <button id="rollBtn" class="btn btn--accent" type="button">🎲 Würfeln</button>
-        <button id="tipBtn" class="btn btn--ghost" type="button">💡 Tipp</button>
+        <button id="nextRoundBtn" class="btn btn--ghost" type="button">🔄 Nächste Runde</button>
       </div>
-      <button id="nextRoundBtn" class="btn btn--ghost btn--wide" type="button">🔄 Nächste Runde</button>
       <p class="dice-hint" id="diceHint">Bis zu 3 Würfe pro Runde · nach dem Wurf Würfel antippen, um sie zu halten.</p>
-    </section>
-
-    <!-- Tipp-Ausgabe -->
-    <section class="tip-box" id="tipBox" hidden>
-      <button class="tip-box__close" id="tipClose" type="button" aria-label="Schließen">×</button>
-      <h2 class="tip-box__title">💡 Empfehlung</h2>
-      <ol class="tip-box__list" id="tipList"></ol>
     </section>
 
     <!-- Spielbogen -->

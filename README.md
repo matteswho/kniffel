@@ -8,8 +8,6 @@ im Browser auf – kein Build, keine Installation, keine Abhängigkeiten.
 - **Mobiler Spielbogen** mit allen Standard-Feldern (oberer & unterer Teil).
 - **Drei Spalten** – du verteilst deine Würfe auf drei parallele Spiele.
   Jede Spalte hat ihren eigenen Bonus.
-- **Tipp-Knopf (💡)** – schlägt vor, wo du deinen aktuellen Wurf am besten
-  einträgst, mit besonderem Fokus auf den **35-Punkte-Bonus** im oberen Teil.
 - **Runden mit bis zu 3 Würfen**: Nach dem Wurf einzelne Würfel antippen, um
   sie zu **halten**; „Nochmal" würfelt nur die übrigen. Nach dem Eintrag (oder
   per „Nächste Runde") startet automatisch eine neue Runde.
@@ -21,18 +19,16 @@ im Browser auf – kein Build, keine Installation, keine Abhängigkeiten.
 ## Bonus-Regel
 
 Erreichst du im oberen Teil einer Spalte mindestens **63 Punkte**, gibt es
-**35 Extrapunkte** (Bonus). 63 entspricht genau drei gleichen Augen pro Feld –
-der Tipp bewertet jeden Eintrag danach, ob er über oder unter diesem Schnitt
-liegt.
+**35 Extrapunkte** (Bonus). 63 entspricht genau drei gleichen Augen pro Feld.
 
 ## So spielst du
 
 1. **Würfeln** tippen (1. Wurf). Würfel antippen, die du behalten willst.
 2. Bis zu zweimal **Nochmal** würfeln (max. 3 Würfe pro Runde).
-3. **💡 Tipp** drücken für eine Empfehlung – oder direkt ein Feld antippen.
-4. Im Dialog „Würfel eintragen", „Streichen" oder einen eigenen Wert wählen.
-   Damit endet die Runde und der nächste Wurf startet automatisch.
-5. Spalte frei wählbar – verteile clever auf alle drei.
+3. Ein Feld antippen und im Dialog „Würfel eintragen", „Streichen" oder einen
+   eigenen Wert wählen. Damit endet die Runde und der nächste Wurf startet
+   automatisch.
+4. Spalte frei wählbar – verteile clever auf alle drei.
 
 ## Lokal starten
 
@@ -50,7 +46,7 @@ python3 -m http.server 8000
 |------------------------|----------------------------------------|
 | `index.html`           | Aufbau der Seite                       |
 | `styles.css`           | Dark-Mode-Layout, responsiv            |
-| `app.js`               | Spiel-Logik, Scoring, Tipp-Engine      |
+| `app.js`               | Spiel-Logik, Scoring, Rundenlogik      |
 | `manifest.webmanifest` | PWA-Metadaten                          |
 | `sw.js`                | Service Worker für Offline-Betrieb     |
 | `icon.svg`             | App-Icon                               |

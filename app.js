@@ -1,5 +1,5 @@
 /* ============================================================
-   Kniffel – mobiler Spielbogen mit 3 Spalten und Bonus-Tipp
+   Kniffel – mobiler Spielbogen mit 3 Spalten
    Reines Vanilla-JS, Zustand in localStorage.
    ============================================================ */
 
@@ -29,14 +29,12 @@ const LOWER_FIELDS = [
 ];
 
 const ALL_FIELDS = [...UPPER_FIELDS, ...LOWER_FIELDS];
-const UPPER_KEYS = UPPER_FIELDS.map(f => f.key);
 
 // ------------------------------------------------------------------
 // Zustand
 // ------------------------------------------------------------------
 let state = loadState();
 let dice = [1, 2, 3, 4, 5];
-let activeTip = null; // { col, key }
 
 // Rundenlogik: max. 3 Würfe, Würfel können gehalten werden
 const MAX_ROLLS = 3;
@@ -136,57 +134,6 @@ function columnTotals(col) {
 }
 
 // ------------------------------------------------------------------
-// Tipp-Engine
-// ------------------------------------------------------------------
-// Bewertet jede offene Zelle. Für den oberen Teil wird der "Schnitt"
-// von 3 gleichen Augen als Maßstab genommen (3×Augenzahl = genau die
-// 63-Punkte-Grenze). Überschuss ist gut für den Bonus, Defizit schlecht.
-const BONUS_WEIGHT = BONUS_POINTS / BONUS_THRESHOLD; // ≈ 0.56 Punkte je Augen-Überschuss
-
-function buildTips(d) {
-  const options = [];
-  for (let col = 0; col < COLUMNS; col++) {
-    const sc = state.scores[col];
-    const totals = columnTotals(col);
-    for (const f of ALL_FIELDS) {
-      if (sc[f.key] != null) continue; // belegt
-      const base = scoreFor(f.key, d);
-      let value = base;
-      let reason = '';
-      const isUpper = UPPER_KEYS.includes(f.key);
-
-      if (isUpper) {
-        const par = 3 * f.face;          // 3 gleiche = Bonus-Schnitt
-        const surplus = base - par;      // >0 hilft dem Bonus
-        // Bonus nur relevant, solange er noch nicht sicher ist
-        const bonusStillOpen = totals.upper < BONUS_THRESHOLD;
-        const weight = bonusStillOpen ? BONUS_WEIGHT : 0;
-        value = base + surplus * weight;
-        if (base === 0) {
-          reason = 'leer – nur als Streichfeld sinnvoll';
-        } else if (surplus > 0) {
-          reason = `${base} Pkt · +${surplus} über dem Bonus-Schnitt 👍`;
-        } else if (surplus === 0) {
-          reason = `${base} Pkt · genau auf Bonus-Kurs`;
-        } else {
-          reason = `${base} Pkt · ${surplus} unter dem Schnitt (Bonus leidet)`;
-        }
-      } else {
-        reason = base > 0 ? `${base} Punkte` : 'leer – Streichfeld';
-        // Kleiner Bonus-Anreiz, schwache Würfe NICHT in Chance zu kippen,
-        // damit gute obere Felder frei bleiben – rein über value=base genug.
-      }
-
-      options.push({ col, key: f.key, label: f.label, base, value, reason, isUpper });
-    }
-  }
-
-  // Sortierung: höchster gewichteter Wert zuerst; bei Gleichstand mehr Rohpunkte
-  options.sort((a, b) => (b.value - a.value) || (b.base - a.base));
-  return options;
-}
-
-// ------------------------------------------------------------------
 // Rendering
 // ------------------------------------------------------------------
 const diceRow = document.getElementById('diceRow');
@@ -228,7 +175,6 @@ function onDieClick(i) {
 // gehaltenen.
 function rollDice() {
   if (rollsUsed >= MAX_ROLLS) return;
-  clearTip();
   rollsUsed++;
   const first = rollsUsed === 1;
   diceRow.querySelectorAll('.die').forEach((el, i) => {
@@ -252,7 +198,6 @@ function rollDice() {
 function nextRound() {
   rollsUsed = 0;
   held = [false, false, false, false, false];
-  clearTip();
   renderDice();
   updateControls();
   renderSheet();
@@ -290,7 +235,6 @@ function fieldRow(f, isUpper) {
   let html = `<tr><td class="row-label">${f.label}<small>${f.hint}</small></td>`;
   for (let c = 0; c < COLUMNS; c++) {
     const v = state.scores[c][f.key];
-    const isTip = activeTip && activeTip.col === c && activeTip.key === f.key;
     let classes = 'cell';
     let inner = '';
     if (v != null) {
@@ -301,7 +245,6 @@ function fieldRow(f, isUpper) {
       const ghost = scoreFor(f.key, dice);
       inner = `<span class="ghost">${ghost}</span>`;
     }
-    if (isTip) classes += ' tip-target tip-best';
     html += `<td class="${classes}" data-col="${c}" data-key="${f.key}">${inner}</td>`;
   }
   html += '</tr>';
@@ -358,48 +301,6 @@ function renderSheet() {
   sheetTable.querySelectorAll('td.cell').forEach(td => {
     td.addEventListener('click', () => openCellModal(+td.dataset.col, td.dataset.key));
   });
-}
-
-// ------------------------------------------------------------------
-// Tipp-Anzeige
-// ------------------------------------------------------------------
-const tipBox = document.getElementById('tipBox');
-const tipList = document.getElementById('tipList');
-
-function showTips() {
-  if (!hasRolled()) {
-    tipList.innerHTML = '<li>Würfle zuerst – dann zeige ich dir die beste Eintragung.</li>';
-    tipBox.hidden = false;
-    return;
-  }
-  const options = buildTips(dice).filter(o => o.base > 0); // sinnvolle Einträge zuerst
-  const fallback = buildTips(dice);                        // falls alles 0 ist
-  const list = (options.length ? options : fallback).slice(0, 4);
-
-  if (!list.length) {
-    tipBox.hidden = true;
-    return;
-  }
-
-  activeTip = { col: list[0].col, key: list[0].key };
-
-  tipList.innerHTML = list.map((o, idx) => {
-    const cls = idx === 0 ? 'best' : '';
-    const pts = o.base > 0 ? `<span class="tip-pts">${o.base} Pkt</span>` : `<span class="tip-pts">streichen</span>`;
-    return `<li class="${cls}">Spalte ${o.col + 1} · ${o.label} — ${pts}
-      <span class="tip-reason">${o.reason}</span></li>`;
-  }).join('');
-
-  tipBox.hidden = false;
-  renderSheet();
-  tipBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function clearTip() {
-  if (activeTip) {
-    activeTip = null;
-    tipBox.hidden = true;
-  }
 }
 
 // ------------------------------------------------------------------
@@ -467,7 +368,6 @@ function setCell(col, key, value) {
     // Eintrag (auch Streichen) beendet die Runde → neuer Wurf
     nextRound();
   } else {
-    clearTip();
     renderSheet();
   }
 }
@@ -487,9 +387,6 @@ document.getElementById('manualOk').addEventListener('click', () => {
 // ------------------------------------------------------------------
 // Buttons
 // ------------------------------------------------------------------
-document.getElementById('tipBtn').addEventListener('click', showTips);
-document.getElementById('tipClose').addEventListener('click', () => clearTip() || renderSheet());
-
 document.getElementById('rollBtn').addEventListener('click', rollDice);
 document.getElementById('nextRoundBtn').addEventListener('click', nextRound);
 
