@@ -1,0 +1,19 @@
+{
+  "name": "Kniffel Spielbogen",
+  "short_name": "Kniffel",
+  "description": "Mobiler Kniffel-Spielbogen mit drei Spalten und Bonus-Tipp.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

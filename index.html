@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f1419" />
+  <meta name="description" content="Mobiler Kniffel-Spielbogen mit drei Spalten und Bonus-Tipp." />
+  <title>Kniffel · Spielbogen</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__title">
+      <span class="app-header__dice">🎲</span>
+      <h1>Kniffel</h1>
+    </div>
+    <button id="resetBtn" class="icon-btn" type="button" title="Neues Spiel" aria-label="Neues Spiel">↺</button>
+  </header>
+
+  <main class="app-main">
+    <!-- Würfelbereich -->
+    <section class="dice-panel" aria-label="Würfel">
+      <div class="dice-row" id="diceRow"></div>
+      <div class="dice-actions">
+        <button id="rollBtn" class="btn btn--ghost" type="button">Würfeln</button>
+        <button id="tipBtn" class="btn btn--accent" type="button">💡 Tipp</button>
+      </div>
+      <p class="dice-hint" id="diceHint">Tippe auf einen Würfel, um die Augen zu ändern.</p>
+    </section>
+
+    <!-- Tipp-Ausgabe -->
+    <section class="tip-box" id="tipBox" hidden>
+      <button class="tip-box__close" id="tipClose" type="button" aria-label="Schließen">×</button>
+      <h2 class="tip-box__title">💡 Empfehlung</h2>
+      <ol class="tip-box__list" id="tipList"></ol>
+    </section>
+
+    <!-- Spielbogen -->
+    <section class="sheet" aria-label="Spielbogen">
+      <table class="sheet-table" id="sheetTable"></table>
+    </section>
+
+    <p class="footer-note">
+      Bonus: Bei mindestens <strong>63</strong> Punkten im oberen Teil gibt es <strong>35</strong> Extrapunkte je Spalte.
+    </p>
+  </main>
+
+  <!-- Eingabe-Dialog für eine Zelle -->
+  <div class="modal" id="cellModal" hidden>
+    <div class="modal__backdrop" id="modalBackdrop"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 class="modal__title" id="modalTitle">Eintragen</h3>
+      <p class="modal__sub" id="modalSub"></p>
+      <div class="modal__actions" id="modalActions"></div>
+      <div class="modal__manual">
+        <input type="number" inputmode="numeric" id="manualInput" placeholder="Eigener Wert" min="0" max="375" />
+        <button class="btn btn--accent" id="manualOk" type="button">OK</button>
+      </div>
+      <button class="btn btn--ghost modal__cancel" id="modalCancel" type="button">Abbrechen</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
