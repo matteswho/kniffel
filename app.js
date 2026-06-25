@@ -38,6 +38,12 @@ let state = loadState();
 let dice = [1, 2, 3, 4, 5];
 let activeTip = null; // { col, key }
 
+// Rundenlogik: max. 3 Würfe, Würfel können gehalten werden
+const MAX_ROLLS = 3;
+let rollsUsed = 0;
+let held = [false, false, false, false, false];
+const hasRolled = () => rollsUsed > 0;
+
 function emptyScores() {
   // scores[col][key] = number | null
   return Array.from({ length: COLUMNS }, () => {
@@ -188,24 +194,89 @@ const sheetTable = document.getElementById('sheetTable');
 
 function renderDice() {
   diceRow.innerHTML = '';
+  const rolled = hasRolled();
   dice.forEach((v, i) => {
     const die = document.createElement('div');
     die.className = 'die';
-    die.dataset.v = v;
     die.dataset.i = i;
-    for (let p = 0; p < v; p++) {
-      const pip = document.createElement('span');
-      pip.className = 'pip';
-      die.appendChild(pip);
+    if (!rolled) {
+      die.classList.add('die--empty');
+      die.textContent = '?';
+    } else {
+      die.dataset.v = v;
+      if (held[i]) die.classList.add('held');
+      for (let p = 0; p < v; p++) {
+        const pip = document.createElement('span');
+        pip.className = 'pip';
+        die.appendChild(pip);
+      }
     }
-    die.addEventListener('click', () => {
-      dice[i] = (dice[i] % 6) + 1;
-      clearTip();
-      renderDice();
-      renderSheet();
-    });
+    die.addEventListener('click', () => onDieClick(i));
     diceRow.appendChild(die);
   });
+}
+
+// Würfel halten/freigeben – nur sinnvoll nach einem Wurf und solange
+// noch Würfe übrig sind.
+function onDieClick(i) {
+  if (rollsUsed === 0 || rollsUsed >= MAX_ROLLS) return;
+  held[i] = !held[i];
+  renderDice();
+}
+
+// Einen Wurf ausführen: beim 1. Wurf alle Würfel, danach nur die nicht
+// gehaltenen.
+function rollDice() {
+  if (rollsUsed >= MAX_ROLLS) return;
+  clearTip();
+  rollsUsed++;
+  const first = rollsUsed === 1;
+  diceRow.querySelectorAll('.die').forEach((el, i) => {
+    if (first || !held[i]) el.classList.add('is-rolling');
+  });
+  let ticks = 0;
+  const iv = setInterval(() => {
+    for (let i = 0; i < 5; i++) {
+      if (first || !held[i]) dice[i] = 1 + Math.floor(Math.random() * 6);
+    }
+    renderDice();
+    if (++ticks >= 6) {
+      clearInterval(iv);
+      updateControls();
+      renderSheet();
+    }
+  }, 70);
+}
+
+// Neue Runde starten: Würfe und Halte-Markierungen zurücksetzen.
+function nextRound() {
+  rollsUsed = 0;
+  held = [false, false, false, false, false];
+  clearTip();
+  renderDice();
+  updateControls();
+  renderSheet();
+}
+
+// Würfel-Button und Status-Text aktualisieren.
+function updateControls() {
+  const remaining = MAX_ROLLS - rollsUsed;
+  const rollBtn = document.getElementById('rollBtn');
+  const status = document.getElementById('rollStatus');
+  if (remaining > 0) {
+    rollBtn.disabled = false;
+    rollBtn.textContent = rollsUsed === 0 ? '🎲 Würfeln' : `🎲 Nochmal (${remaining})`;
+  } else {
+    rollBtn.disabled = true;
+    rollBtn.textContent = 'Keine Würfe mehr';
+  }
+  const labels = [
+    'Bereit – tippe „Würfeln" für die nächste Runde',
+    '1. Wurf · Würfel antippen zum Halten',
+    '2. Wurf · Würfel antippen zum Halten',
+    '3. Wurf · jetzt ein Feld eintragen',
+  ];
+  status.textContent = labels[rollsUsed];
 }
 
 function colHeader() {
@@ -225,8 +296,8 @@ function fieldRow(f, isUpper) {
     if (v != null) {
       if (v === 0) classes += ' struck';
       inner = `<span class="val">${v === 0 ? '✕' : v}</span>`;
-    } else {
-      // Geister-Vorschau anhand aktueller Würfel
+    } else if (hasRolled()) {
+      // Geister-Vorschau anhand der aktuellen Würfel (nur nach dem Wurf)
       const ghost = scoreFor(f.key, dice);
       inner = `<span class="ghost">${ghost}</span>`;
     }
@@ -296,6 +367,11 @@ const tipBox = document.getElementById('tipBox');
 const tipList = document.getElementById('tipList');
 
 function showTips() {
+  if (!hasRolled()) {
+    tipList.innerHTML = '<li>Würfle zuerst – dann zeige ich dir die beste Eintragung.</li>';
+    tipBox.hidden = false;
+    return;
+  }
   const options = buildTips(dice).filter(o => o.base > 0); // sinnvolle Einträge zuerst
   const fallback = buildTips(dice);                        // falls alles 0 ist
   const list = (options.length ? options : fallback).slice(0, 4);
@@ -342,21 +418,26 @@ function openCellModal(col, key) {
   modalTarget = { col, key };
   const f = fieldDef(key);
   const current = state.scores[col][key];
+  const rolled = hasRolled();
   const ghost = scoreFor(key, dice);
 
   modalTitle.textContent = `${f.label} – Spalte ${col + 1}`;
   modalSub.textContent = current != null
     ? `Aktuell: ${current === 0 ? 'gestrichen' : current + ' Punkte'}`
-    : `Aktuelle Würfel ergeben hier ${ghost} Punkte.`;
+    : (rolled
+        ? `Aktuelle Würfel ergeben hier ${ghost} Punkte.`
+        : `Noch nicht gewürfelt – Wert von Hand eintragen oder streichen.`);
 
   modalActions.innerHTML = '';
 
-  // Aktuelle Würfel eintragen
-  const enterBtn = document.createElement('button');
-  enterBtn.className = 'btn btn--accent';
-  enterBtn.textContent = `Würfel eintragen: ${ghost} Punkte`;
-  enterBtn.addEventListener('click', () => setCell(col, key, ghost));
-  modalActions.appendChild(enterBtn);
+  // Aktuelle Würfel eintragen (nur nach dem Wurf)
+  if (rolled) {
+    const enterBtn = document.createElement('button');
+    enterBtn.className = 'btn btn--accent';
+    enterBtn.textContent = `Würfel eintragen: ${ghost} Punkte`;
+    enterBtn.addEventListener('click', () => setCell(col, key, ghost));
+    modalActions.appendChild(enterBtn);
+  }
 
   // Streichen
   const strikeBtn = document.createElement('button');
@@ -382,8 +463,13 @@ function setCell(col, key, value) {
   state.scores[col][key] = value;
   saveState();
   closeModal();
-  clearTip();
-  renderSheet();
+  if (value !== null) {
+    // Eintrag (auch Streichen) beendet die Runde → neuer Wurf
+    nextRound();
+  } else {
+    clearTip();
+    renderSheet();
+  }
 }
 
 function closeModal() { modal.hidden = true; modalTarget = null; }
@@ -404,28 +490,14 @@ document.getElementById('manualOk').addEventListener('click', () => {
 document.getElementById('tipBtn').addEventListener('click', showTips);
 document.getElementById('tipClose').addEventListener('click', () => clearTip() || renderSheet());
 
-document.getElementById('rollBtn').addEventListener('click', () => {
-  clearTip();
-  const dieEls = diceRow.querySelectorAll('.die');
-  dieEls.forEach(el => el.classList.add('is-rolling'));
-  let ticks = 0;
-  const iv = setInterval(() => {
-    dice = dice.map(() => 1 + Math.floor(Math.random() * 6));
-    renderDice();
-    ticks++;
-    if (ticks >= 6) {
-      clearInterval(iv);
-      renderSheet();
-    }
-  }, 70);
-});
+document.getElementById('rollBtn').addEventListener('click', rollDice);
+document.getElementById('nextRoundBtn').addEventListener('click', nextRound);
 
 document.getElementById('resetBtn').addEventListener('click', () => {
   if (confirm('Neues Spiel starten? Alle Eintragungen werden gelöscht.')) {
     state = { scores: emptyScores() };
     saveState();
-    clearTip();
-    renderSheet();
+    nextRound();
   }
 });
 
@@ -440,4 +512,5 @@ if ('serviceWorker' in navigator) {
 
 // Start
 renderDice();
+updateControls();
 renderSheet();

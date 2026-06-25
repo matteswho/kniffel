@@ -78,6 +78,7 @@ body {
   margin-bottom: 14px;
 }
 .die {
+  position: relative;
   aspect-ratio: 1 / 1;
   background: var(--bg-elev-2);
   border: 1px solid var(--line);
@@ -91,6 +92,23 @@ body {
   user-select: none;
 }
 .die:active { transform: scale(0.94); }
+/* Platzhalter vor dem ersten Wurf */
+.die--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text-dim);
+  font-size: 26px;
+  font-weight: 700;
+  border-style: dashed;
+}
+/* Gehaltener Würfel */
+.die.held {
+  border-color: var(--good);
+  box-shadow: inset 0 0 0 2px var(--good);
+  background: rgba(88, 214, 141, 0.12);
+}
 .die.is-rolling { animation: shake 0.4s ease; }
 @keyframes shake {
   0%, 100% { transform: rotate(0); }
@@ -132,6 +150,10 @@ body {
 .dice-actions { display: flex; gap: 10px; }
 .dice-hint { margin: 10px 2px 0; font-size: 12px; color: var(--text-dim); text-align: center; }
 
+.round-info { text-align: center; margin-bottom: 12px; }
+#rollStatus { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+.btn--wide { width: 100%; margin-top: 10px; }
+
 .btn {
   flex: 1;
   padding: 12px 14px;
@@ -144,6 +166,8 @@ body {
   color: var(--text);
 }
 .btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn:disabled:active { transform: none; }
 .btn--accent { background: var(--accent-strong); border-color: var(--accent-strong); color: #062534; }
 .btn--ghost { background: transparent; }
 

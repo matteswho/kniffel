@@ -1,5 +1,5 @@
 /* Einfacher Offline-Cache für die Kniffel-App */
-const CACHE = 'kniffel-v1';
+const CACHE = 'kniffel-v2';
 const ASSETS = [
   './',
   './index.html',

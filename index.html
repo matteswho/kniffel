@@ -25,12 +25,16 @@
   <main class="app-main">
     <!-- Würfelbereich -->
     <section class="dice-panel" aria-label="Würfel">
+      <div class="round-info">
+        <span id="rollStatus">Bereit – tippe „Würfeln" für die nächste Runde</span>
+      </div>
       <div class="dice-row" id="diceRow"></div>
       <div class="dice-actions">
-        <button id="rollBtn" class="btn btn--ghost" type="button">Würfeln</button>
-        <button id="tipBtn" class="btn btn--accent" type="button">💡 Tipp</button>
+        <button id="rollBtn" class="btn btn--accent" type="button">🎲 Würfeln</button>
+        <button id="tipBtn" class="btn btn--ghost" type="button">💡 Tipp</button>
       </div>
-      <p class="dice-hint" id="diceHint">Tippe auf einen Würfel, um die Augen zu ändern.</p>
+      <button id="nextRoundBtn" class="btn btn--ghost btn--wide" type="button">🔄 Nächste Runde</button>
+      <p class="dice-hint" id="diceHint">Bis zu 3 Würfe pro Runde · nach dem Wurf Würfel antippen, um sie zu halten.</p>
     </section>
 
     <!-- Tipp-Ausgabe -->
