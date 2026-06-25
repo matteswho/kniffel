@@ -8,9 +8,13 @@ im Browser auf – kein Build, keine Installation, keine Abhängigkeiten.
 - **Mobiler Spielbogen** mit allen Standard-Feldern (oberer & unterer Teil).
 - **Drei Spalten** – du verteilst deine Würfe auf drei parallele Spiele.
   Jede Spalte hat ihren eigenen Bonus.
-- **Runden mit bis zu 3 Würfen**: Nach dem Wurf einzelne Würfel antippen, um
-  sie zu **halten**; „Nochmal" würfelt nur die übrigen. Nach dem Eintrag (oder
-  per „Nächste Runde") startet automatisch eine neue Runde.
+- **Zwei Spielmodi** (⚙ Einstellungen):
+  - *Digital* – die App würfelt: bis zu 3 Würfe pro Runde, Würfel **halten**,
+    „Nochmal" würfelt nur die übrigen; nach dem Eintrag startet die nächste Runde.
+  - *Manuell* – für eigene, echte Würfel: der digitale Würfelbereich verschwindet.
+    Beim Klick auf eine Zelle wählst du dein Ergebnis: im oberen Teil tippst du
+    die passenden Würfel an (Einser 1–5, Zweier 2–10, …), bei Pasch/Chance stellst
+    du die 5 Augen ein, Full House/Straßen/Kniffel per „Geschafft / Streichen".
 - **Geister-Vorschau**: leere Felder zeigen blass, wie viele Punkte der aktuelle
   Wurf dort bringen würde.
 - **Dark Mode** und automatisches Speichern (localStorage).

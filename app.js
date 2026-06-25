@@ -5,6 +5,7 @@
 
 const COLUMNS = 3;
 const STORAGE_KEY = 'kniffel-state-v1';
+const SETTINGS_KEY = 'kniffel-settings-v1';
 const BONUS_THRESHOLD = 63;
 const BONUS_POINTS = 35;
 
@@ -34,6 +35,7 @@ const ALL_FIELDS = [...UPPER_FIELDS, ...LOWER_FIELDS];
 // Zustand
 // ------------------------------------------------------------------
 let state = loadState();
+let settings = loadSettings();
 let dice = [1, 2, 3, 4, 5];
 
 // Rundenlogik: max. 3 Würfe, Würfel können gehalten werden
@@ -41,6 +43,22 @@ const MAX_ROLLS = 3;
 let rollsUsed = 0;
 let held = [false, false, false, false, false];
 const hasRolled = () => rollsUsed > 0;
+
+// Feld-Kategorien für den manuellen Modus
+const UPPER_KEYS = UPPER_FIELDS.map(f => f.key);
+const SUM_LOWER_KEYS = ['threeKind', 'fourKind', 'chance']; // Wert = Augensumme
+const FIXED_LOWER = { fullHouse: 25, smallStr: 30, largeStr: 40, kniffel: 50 };
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return Object.assign({ manualMode: false }, JSON.parse(raw));
+  } catch (e) { /* ignore */ }
+  return { manualMode: false };
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
+}
 
 function emptyScores() {
   // scores[col][key] = number | null
@@ -139,25 +157,33 @@ function columnTotals(col) {
 const diceRow = document.getElementById('diceRow');
 const sheetTable = document.getElementById('sheetTable');
 
+// Erzeugt ein Würfel-Element mit den passenden Pips für einen Wert.
+function buildDie(value) {
+  const die = document.createElement('div');
+  die.className = 'die';
+  die.dataset.v = value;
+  for (let p = 0; p < value; p++) {
+    const pip = document.createElement('span');
+    pip.className = 'pip';
+    die.appendChild(pip);
+  }
+  return die;
+}
+
 function renderDice() {
   diceRow.innerHTML = '';
   const rolled = hasRolled();
   dice.forEach((v, i) => {
-    const die = document.createElement('div');
-    die.className = 'die';
-    die.dataset.i = i;
+    let die;
     if (!rolled) {
-      die.classList.add('die--empty');
+      die = document.createElement('div');
+      die.className = 'die die--empty';
       die.textContent = '?';
     } else {
-      die.dataset.v = v;
+      die = buildDie(v);
       if (held[i]) die.classList.add('held');
-      for (let p = 0; p < v; p++) {
-        const pip = document.createElement('span');
-        pip.className = 'pip';
-        die.appendChild(pip);
-      }
     }
+    die.dataset.i = i;
     die.addEventListener('click', () => onDieClick(i));
     diceRow.appendChild(die);
   });
@@ -313,42 +339,26 @@ const modalActions = document.getElementById('modalActions');
 const manualInput = document.getElementById('manualInput');
 let modalTarget = null;
 
+const modalPicker = document.getElementById('modalPicker');
+
 function fieldDef(key) { return ALL_FIELDS.find(f => f.key === key); }
 
 function openCellModal(col, key) {
   modalTarget = { col, key };
   const f = fieldDef(key);
-  const current = state.scores[col][key];
-  const rolled = hasRolled();
-  const ghost = scoreFor(key, dice);
-
   modalTitle.textContent = `${f.label} – Spalte ${col + 1}`;
-  modalSub.textContent = current != null
-    ? `Aktuell: ${current === 0 ? 'gestrichen' : current + ' Punkte'}`
-    : (rolled
-        ? `Aktuelle Würfel ergeben hier ${ghost} Punkte.`
-        : `Noch nicht gewürfelt – Wert von Hand eintragen oder streichen.`);
-
+  modalPicker.innerHTML = '';
   modalActions.innerHTML = '';
+  manualInput.value = '';
 
-  // Aktuelle Würfel eintragen (nur nach dem Wurf)
-  if (rolled) {
-    const enterBtn = document.createElement('button');
-    enterBtn.className = 'btn btn--accent';
-    enterBtn.textContent = `Würfel eintragen: ${ghost} Punkte`;
-    enterBtn.addEventListener('click', () => setCell(col, key, ghost));
-    modalActions.appendChild(enterBtn);
+  if (settings.manualMode) {
+    buildManualModal(col, key, f);
+  } else {
+    buildDigitalModal(col, key, f);
   }
 
-  // Streichen
-  const strikeBtn = document.createElement('button');
-  strikeBtn.className = 'btn btn--ghost';
-  strikeBtn.textContent = 'Streichen (0 Punkte)';
-  strikeBtn.addEventListener('click', () => setCell(col, key, 0));
-  modalActions.appendChild(strikeBtn);
-
-  // Leeren (nur falls belegt)
-  if (current != null) {
+  // „Eintrag löschen" gibt es in beiden Modi, falls belegt.
+  if (state.scores[col][key] != null) {
     const clearBtn = document.createElement('button');
     clearBtn.className = 'btn btn--ghost';
     clearBtn.textContent = 'Eintrag löschen';
@@ -356,23 +366,140 @@ function openCellModal(col, key) {
     modalActions.appendChild(clearBtn);
   }
 
-  manualInput.value = '';
   modal.hidden = false;
+}
+
+// --- Standardmodus: Übernahme der gewürfelten Augen ---------------------
+function buildDigitalModal(col, key, f) {
+  const current = state.scores[col][key];
+  const rolled = hasRolled();
+  const ghost = scoreFor(key, dice);
+
+  modalSub.textContent = current != null
+    ? `Aktuell: ${current === 0 ? 'gestrichen' : current + ' Punkte'}`
+    : (rolled
+        ? `Aktuelle Würfel ergeben hier ${ghost} Punkte.`
+        : `Noch nicht gewürfelt – Wert von Hand eintragen oder streichen.`);
+
+  if (rolled) {
+    addBtn('btn--accent', `Würfel eintragen: ${ghost} Punkte`, () => setCell(col, key, ghost));
+  }
+  addBtn('btn--ghost', 'Streichen (0 Punkte)', () => setCell(col, key, 0));
+}
+
+// --- Manueller Modus: eigene Würfel anklicken ---------------------------
+function buildManualModal(col, key, f) {
+  if (UPPER_KEYS.includes(key)) {
+    buildUpperPicker(col, key, f);
+  } else if (SUM_LOWER_KEYS.includes(key)) {
+    buildSumPicker(col, key, f);
+  } else {
+    buildFixedPicker(col, key, f); // Full House, Straßen, Kniffel
+  }
+}
+
+// Oberer Teil: 5 Würfel der jeweiligen Augenzahl an-/abwählen.
+function buildUpperPicker(col, key, f) {
+  modalSub.textContent = `Tippe die ${f.label} an, die du gewürfelt hast.`;
+  const active = [false, false, false, false, false];
+  const row = document.createElement('div');
+  row.className = 'dice-row dice-row--modal';
+  modalPicker.appendChild(row);
+
+  const confirm = addBtn('btn--accent', '', () =>
+    setCell(col, key, active.filter(Boolean).length * f.face));
+  modalActions.appendChild(makeStrike(col, key));
+
+  const update = () => {
+    confirm.textContent = `Eintragen: ${active.filter(Boolean).length * f.face} Punkte`;
+  };
+  for (let i = 0; i < 5; i++) {
+    const die = buildDie(f.face);
+    die.classList.add('die--off');
+    die.addEventListener('click', () => {
+      active[i] = !active[i];
+      die.classList.toggle('die--off', !active[i]);
+      update();
+    });
+    row.appendChild(die);
+  }
+  update();
+}
+
+// Pasch / Chance: 5 Würfel mit echten Augen einstellen → Augensumme.
+function buildSumPicker(col, key, f) {
+  modalSub.textContent = 'Stelle deine 5 Würfel ein (antippen erhöht die Augen).';
+  const vals = [1, 1, 1, 1, 1];
+  const row = document.createElement('div');
+  row.className = 'dice-row dice-row--modal';
+  modalPicker.appendChild(row);
+
+  const confirm = addBtn('btn--accent', '', () => setCell(col, key, scoreFor(key, vals)));
+  modalActions.appendChild(makeStrike(col, key));
+
+  const update = () => {
+    const pts = scoreFor(key, vals);
+    confirm.textContent = pts > 0 ? `Eintragen: ${pts} Punkte` : 'Eintragen: 0 (nicht erfüllt)';
+  };
+  const renderRow = () => {
+    row.innerHTML = '';
+    vals.forEach((v, i) => {
+      const die = buildDie(v);
+      die.addEventListener('click', () => {
+        vals[i] = (vals[i] % 6) + 1;
+        renderRow();
+        update();
+      });
+      row.appendChild(die);
+    });
+  };
+  renderRow();
+  update();
+}
+
+// Full House / Straßen / Kniffel: Festwert erreicht oder streichen.
+function buildFixedPicker(col, key, f) {
+  const pts = FIXED_LOWER[key];
+  modalSub.textContent = `${f.label} ist ${pts} Punkte wert – erreicht?`;
+  addBtn('btn--accent', `Geschafft: ${pts} Punkte`, () => setCell(col, key, pts));
+  modalActions.appendChild(makeStrike(col, key));
+}
+
+function makeStrike(col, key) {
+  const b = document.createElement('button');
+  b.className = 'btn btn--ghost';
+  b.textContent = 'Streichen (0 Punkte)';
+  b.addEventListener('click', () => setCell(col, key, 0));
+  return b;
+}
+
+// Kleiner Helfer: Button erzeugen, an modalActions hängen, zurückgeben.
+function addBtn(cls, text, onClick) {
+  const b = document.createElement('button');
+  b.className = `btn ${cls}`;
+  b.textContent = text;
+  b.addEventListener('click', onClick);
+  modalActions.appendChild(b);
+  return b;
 }
 
 function setCell(col, key, value) {
   state.scores[col][key] = value;
   saveState();
   closeModal();
-  if (value !== null) {
-    // Eintrag (auch Streichen) beendet die Runde → neuer Wurf
+  if (value !== null && !settings.manualMode) {
+    // Standardmodus: Eintrag (auch Streichen) beendet die Runde → neuer Wurf
     nextRound();
   } else {
     renderSheet();
   }
 }
 
-function closeModal() { modal.hidden = true; modalTarget = null; }
+function closeModal() {
+  modal.hidden = true;
+  modalPicker.innerHTML = '';
+  modalTarget = null;
+}
 
 document.getElementById('modalBackdrop').addEventListener('click', closeModal);
 document.getElementById('modalCancel').addEventListener('click', closeModal);
@@ -389,6 +516,37 @@ document.getElementById('manualOk').addEventListener('click', () => {
 // ------------------------------------------------------------------
 document.getElementById('rollBtn').addEventListener('click', rollDice);
 document.getElementById('nextRoundBtn').addEventListener('click', nextRound);
+
+// ------------------------------------------------------------------
+// Einstellungen / Spielmodus
+// ------------------------------------------------------------------
+const settingsModal = document.getElementById('settingsModal');
+const manualToggle = document.getElementById('manualToggle');
+const dicePanel = document.querySelector('.dice-panel');
+
+// Würfelbereich passend zum Modus ein-/ausblenden.
+function applyMode() {
+  manualToggle.checked = settings.manualMode;
+  dicePanel.hidden = settings.manualMode;
+  document.body.classList.toggle('manual-mode', settings.manualMode);
+  if (settings.manualMode) {
+    rollsUsed = 0;
+    held = [false, false, false, false, false];
+  }
+  renderSheet();
+}
+
+function openSettings() { settingsModal.hidden = false; }
+function closeSettings() { settingsModal.hidden = true; }
+
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('settingsBackdrop').addEventListener('click', closeSettings);
+document.getElementById('settingsClose').addEventListener('click', closeSettings);
+manualToggle.addEventListener('change', () => {
+  settings.manualMode = manualToggle.checked;
+  saveSettings();
+  applyMode();
+});
 
 document.getElementById('resetBtn').addEventListener('click', () => {
   if (confirm('Neues Spiel starten? Alle Eintragungen werden gelöscht.')) {
@@ -410,4 +568,5 @@ if ('serviceWorker' in navigator) {
 // Start
 renderDice();
 updateControls();
+applyMode();
 renderSheet();

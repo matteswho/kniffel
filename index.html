@@ -19,7 +19,10 @@
       <span class="app-header__dice">🎲</span>
       <h1>Kniffel</h1>
     </div>
-    <button id="resetBtn" class="icon-btn" type="button" title="Neues Spiel" aria-label="Neues Spiel">↺</button>
+    <div class="app-header__actions">
+      <button id="settingsBtn" class="icon-btn" type="button" title="Einstellungen" aria-label="Einstellungen">⚙</button>
+      <button id="resetBtn" class="icon-btn" type="button" title="Neues Spiel" aria-label="Neues Spiel">↺</button>
+    </div>
   </header>
 
   <main class="app-main">
@@ -52,12 +55,32 @@
     <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <h3 class="modal__title" id="modalTitle">Eintragen</h3>
       <p class="modal__sub" id="modalSub"></p>
+      <div class="modal__picker" id="modalPicker"></div>
       <div class="modal__actions" id="modalActions"></div>
       <div class="modal__manual">
         <input type="number" inputmode="numeric" id="manualInput" placeholder="Eigener Wert" min="0" max="375" />
         <button class="btn btn--accent" id="manualOk" type="button">OK</button>
       </div>
       <button class="btn btn--ghost modal__cancel" id="modalCancel" type="button">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Einstellungen -->
+  <div class="modal" id="settingsModal" hidden>
+    <div class="modal__backdrop" id="settingsBackdrop"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <h3 class="modal__title" id="settingsTitle">Einstellungen</h3>
+      <label class="switch-row" for="manualToggle">
+        <span class="switch-row__text">
+          <strong>Manueller Modus</strong>
+          <small>Eigene Würfel: Werte direkt in den Zellen eintragen, ohne digitalen Würfelbereich.</small>
+        </span>
+        <span class="switch">
+          <input type="checkbox" id="manualToggle" />
+          <span class="switch__slider"></span>
+        </span>
+      </label>
+      <button class="btn btn--accent modal__cancel" id="settingsClose" type="button">Fertig</button>
     </div>
   </div>
 
