@@ -13,7 +13,7 @@
 window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyCPQJWCmguiMLcuBNZLnp_AgGIvgBvTmzs",
   authDomain: "kniffel-go.firebaseapp.com",
-  databaseURL: "https://DEINE_DATENBANK_URL",  // <-- nach dem Anlegen der Realtime Database hier eintragen
+  databaseURL: "https://kniffel-go-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kniffel-go",
   storageBucket: "kniffel-go.firebasestorage.app",
   messagingSenderId: "304761175301",
