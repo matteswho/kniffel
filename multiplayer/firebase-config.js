@@ -1,23 +1,22 @@
 /* ============================================================
-   Firebase-Konfiguration für die Mehrspieler-Version.
+   Firebase-Konfiguration für die Mehrspieler-Version (Projekt: kniffel-go).
 
-   So füllst du diese Datei:
-   1. Firebase-Konsole → dein Projekt → ⚙ Projekteinstellungen → „Allgemein"
-      → Abschnitt „Meine Apps" → Web-App (</>) hinzufügen/auswählen.
-   2. Den dort gezeigten `firebaseConfig`-Block hierher kopieren (die Werte
-      unten ersetzen). Wichtig ist besonders `databaseURL`.
-   3. In der Konsole „Realtime Database" aktivieren (Build → Realtime Database
-      → Datenbank erstellen) und die Regeln aus der README setzen.
+   Die Werte stammen aus der Firebase-Konsole (Projekteinstellungen → Meine Apps).
+   Firebase-Web-Keys sind KEIN Geheimnis – der Schutz läuft über die
+   Datenbank-Regeln.
 
-   Hinweis: Diese Werte sind KEIN Geheimnis – Firebase-Web-Keys gehören in den
-   Client. Der Zugriffsschutz erfolgt über die Datenbank-Regeln.
+   HINWEIS: `databaseURL` muss die URL deiner Realtime Database sein. Sie wird
+   angezeigt, sobald du unter „Build → Realtime Database" eine Datenbank
+   erstellt hast (oben auf der Seite), z. B.:
+     https://kniffel-go-default-rtdb.europe-west1.firebasedatabase.app
    ============================================================ */
 window.FIREBASE_CONFIG = {
-  apiKey: "DEINE_API_KEY",
-  authDomain: "DEIN_PROJEKT.firebaseapp.com",
-  databaseURL: "https://DEIN_PROJEKT-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "DEIN_PROJEKT",
-  storageBucket: "DEIN_PROJEKT.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxx"
+  apiKey: "AIzaSyCPQJWCmguiMLcuBNZLnp_AgGIvgBvTmzs",
+  authDomain: "kniffel-go.firebaseapp.com",
+  databaseURL: "https://DEINE_DATENBANK_URL",  // <-- nach dem Anlegen der Realtime Database hier eintragen
+  projectId: "kniffel-go",
+  storageBucket: "kniffel-go.firebasestorage.app",
+  messagingSenderId: "304761175301",
+  appId: "1:304761175301:web:fa35befd4c3fe09fe4cb6c",
+  measurementId: "G-CBDWN1XGZ5"
 };
