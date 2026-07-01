@@ -54,17 +54,33 @@ spielt am eigenen Gerät, alle sehen die Punkte aller Mitspieler live.
   Würfel halten) wie in der Einzel-Version. Über ⚙ Einstellungen kann man auf den
   **manuellen Modus** (eigene, echte Würfel) umschalten.
 
-Die Synchronisation läuft **ohne Konto** direkt zwischen den Geräten über WebRTC
-(PeerJS-Broker als Signalisierung, öffentliche STUN/TURN-Server für den
-Verbindungsaufbau). Das Handy des Spielleiters ist der „Host" und sollte während
-des Spiels online und die Seite geöffnet bleiben. Es wird eine aktive
-Internetverbindung auf allen Geräten benötigt.
+Die Synchronisation läuft über **Firebase Realtime Database**: Der Spielstand liegt
+zentral in der Datenbank, jedes Gerät liest/schreibt per Transaktion. Dadurch muss
+**kein Gerät „Host" bleiben** – auch über Mobilfunk zuverlässig, kein WLAN-Zwang.
 
-**Wenn das Verbinden hängt:** Am zuverlässigsten sind alle Geräte im **selben
-WLAN**. Bleibt es auf „verbinde …", erscheint nach 20 s ein Hinweis samt Button
-**„Erneut verbinden"**. Prüfe, ob der Code stimmt und das Leiter-Handy die Seite
-geöffnet hat. In manchen Mobilfunknetzen kann der direkte Aufbau trotz TURN
-scheitern – dann WLAN nutzen.
+### Firebase einrichten (einmalig)
+
+1. In der [Firebase-Konsole](https://console.firebase.google.com) im Projekt
+   **Build → Realtime Database → Datenbank erstellen** (Region wählen, z. B.
+   *europe-west1*).
+2. Unter **Regeln** diese Regeln setzen und veröffentlichen:
+   ```json
+   {
+     "rules": {
+       "games": {
+         "$code": { ".read": true, ".write": true }
+       }
+     }
+   }
+   ```
+3. **⚙ Projekteinstellungen → Allgemein → Meine Apps** → Web-App (`</>`) anlegen
+   und den `firebaseConfig`-Block kopieren.
+4. Die Werte in `multiplayer/firebase-config.js` eintragen (besonders `databaseURL`).
+
+Die Config (inkl. `apiKey`) darf im öffentlichen Code stehen – das sind bei Firebase
+keine Geheimnisse; der Schutz erfolgt über die Datenbank-Regeln. Bei den offenen
+Regeln oben könnte theoretisch jemand, der einen 5‑stelligen Code errät, mitlesen –
+für ein lockeres Spiel unter Freunden ist das in Ordnung.
 
 ## Lokal starten
 
