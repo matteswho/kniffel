@@ -97,12 +97,25 @@ function newPlayer(name, owner = null) { return { pid: rid(), name: name || 'Spi
 function playerById(pid) { return game && game.players.find(p => p.pid === pid); }
 function myPlayer() { return game && game.players.find(p => p.owner === deviceId); }
 
-// Darf dieses Gerät die Spalte von p bearbeiten?
-function canEdit(p) { return p.owner === deviceId || (isHost && !p.owner); }
+// ---------------- Zug-Logik ----------------
+function currentPlayer() { return game && game.turn >= 0 ? game.players[game.turn] : null; }
+function gameOver() { return !!game && game.turn === -1; }
+function isSheetFull(p) { return ALL_FIELDS.every(f => p.scores[f.key] != null); }
+// Kann dieses Gerät für p eintragen (eigener Spieler oder Host für Platzhalter)?
+function canControl(p) { return !!p && (p.owner === deviceId || (isHost && !p.owner)); }
+// Ist p gerade am Zug und darf dieses Gerät für p eintragen?
+function canEnter(p) { const cp = currentPlayer(); return !gameOver() && !!cp && cp.pid === p.pid && canControl(p); }
+function isMyTurn() { return canControl(currentPlayer()); }
 
-function validScore(key, value) {
-  if (value === null) return true;
-  return Number.isInteger(value) && value >= 0 && value <= 375;
+// Zug an den nächsten Spieler mit noch offenen Feldern weitergeben.
+function advanceTurn() {
+  const n = game.players.length;
+  if (!n) { game.turn = -1; return; }
+  for (let step = 1; step <= n; step++) {
+    const idx = (game.turn + step) % n;
+    if (!isSheetFull(game.players[idx])) { game.turn = idx; return; }
+  }
+  game.turn = -1; // alle Blätter voll → Spiel beendet
 }
 
 // ---------------- Host: Nachrichten-Reducer ----------------
@@ -123,9 +136,15 @@ function hostApply(msg) {
     case 'set': {
       const p = playerById(msg.pid);
       if (!p) break;
-      const allowed = msg.deviceId === deviceId || p.owner === msg.deviceId || (!p.owner && msg.deviceId === deviceId);
-      if (allowed && validScore(msg.key, msg.value) && ALL_FIELDS.some(f => f.key === msg.key)) {
+      const cp = currentPlayer();
+      const isCurrent = cp && cp.pid === p.pid;                 // nur wer dran ist
+      const owns = p.owner ? (msg.deviceId === p.owner) : (msg.deviceId === deviceId); // eigener Spieler / Host-Platzhalter
+      const valOk = Number.isInteger(msg.value) && msg.value >= 0 && msg.value <= 375; // kein null → kein Löschen
+      const fieldOk = ALL_FIELDS.some(f => f.key === msg.key);
+      const empty = p.scores[msg.key] === null;                 // kein Überschreiben
+      if (!gameOver() && isCurrent && owns && valOk && fieldOk && empty) {
         p.scores[msg.key] = msg.value;
+        advanceTurn();
       }
       break;
     }
@@ -137,7 +156,7 @@ function hostApply(msg) {
 // ---------------- Sync: Host ----------------
 function startHost(hostName) {
   isHost = true;
-  game = { code: genCode(), players: [newPlayer(hostName, deviceId)] };
+  game = { code: genCode(), players: [newPlayer(hostName, deviceId)], turn: 0 };
   myPid = game.players[0].pid;
   saveSession();
   showBoard();
@@ -315,8 +334,9 @@ function updateControls() {
 // Würfel- vs. manueller Modus anwenden
 function applyMode() {
   document.getElementById('manualToggle').checked = settings.manualMode;
-  document.getElementById('dicePanel').hidden = settings.manualMode;
   if (!settings.manualMode) { renderDice(); updateControls(); }
+  if (game) updateTurnUI(); // Sichtbarkeit hängt zusätzlich vom Zug ab
+  else document.getElementById('dicePanel').hidden = settings.manualMode;
 }
 
 // ---------------- UI: Verbindungsstatus ----------------
@@ -344,11 +364,12 @@ function renderBoard() {
 
   // Kopf
   let html = '<thead><tr><th class="row-label">Feld</th>';
-  players.forEach(p => {
+  players.forEach((p, idx) => {
     const you = p.owner === deviceId;
-    const online = p.owner && (isHost ? (p.owner === deviceId || conns[p.owner]) : true);
+    const isTurn = idx === game.turn;
     const tag = you ? ' 📱' : (p.owner ? '' : ' •');
-    html += `<th class="${you ? 'col-you' : ''}">${esc(p.name)}${tag}</th>`;
+    const cls = [you ? 'col-you' : '', isTurn ? 'col-turn' : ''].filter(Boolean).join(' ');
+    html += `<th class="${cls}">${isTurn ? '▶ ' : ''}${esc(p.name)}${tag}</th>`;
   });
   html += '</tr></thead><tbody>';
 
@@ -370,17 +391,19 @@ function renderBoard() {
     td.addEventListener('click', () => {
       const pid = td.dataset.pid, key = td.dataset.key;
       const p = playerById(pid);
-      if (p && canEdit(p)) openEntry(pid, key);
+      if (p && canEnter(p) && p.scores[key] === null) openEntry(pid, key);
     });
   });
+
+  updateTurnUI();
 }
 
 function fieldRow(f) {
   let html = `<tr><td class="row-label">${f.label}</td>`;
   game.players.forEach(p => {
     const v = p.scores[f.key];
-    const editable = canEdit(p);
-    let cls = 'cell' + (editable ? ' editable' : '') + (p.owner === deviceId ? ' col-you' : '');
+    const editable = canEnter(p) && v === null; // nur aktueller Spieler, nur leere Felder
+    let cls = 'cell' + (editable ? ' editable' : '') + (p.owner === deviceId ? ' col-you' : '') + (p.pid === (currentPlayer() || {}).pid ? ' col-turn' : '');
     let inner = '';
     if (v != null) { if (v === 0) cls += ' struck'; inner = v === 0 ? '✕' : v; }
     else if (editable && !settings.manualMode && hasRolled()) inner = `<span class="tap ghost">${scoreFor(f.key, dice)}</span>`;
@@ -388,6 +411,26 @@ function fieldRow(f) {
     html += `<td class="${cls}" data-pid="${p.pid}" data-key="${f.key}">${inner}</td>`;
   });
   return html + '</tr>';
+}
+
+// Zug-Banner + Sichtbarkeit des Würfelbereichs aktualisieren
+function updateTurnUI() {
+  const banner = document.getElementById('turnBanner');
+  const dp = document.getElementById('dicePanel');
+  if (!game) { banner.textContent = ''; return; }
+  if (gameOver()) {
+    let best = null;
+    game.players.forEach(p => { const g = computeTotals(p.scores).grand; if (!best || g > best.g) best = { p, g }; });
+    banner.className = 'turn-banner turn-banner--over';
+    banner.textContent = best ? `🏆 ${best.p.name} gewinnt mit ${best.g} Punkten!` : 'Spiel beendet';
+  } else {
+    const cp = currentPlayer();
+    const mine = canControl(cp);
+    banner.className = 'turn-banner' + (mine ? ' turn-banner--you' : '');
+    if (mine) banner.textContent = cp.owner === deviceId ? '🎲 Du bist dran' : `🎲 ${cp.name} ist dran – du trägst ein`;
+    else banner.textContent = cp ? `⏳ ${cp.name} ist dran …` : '';
+  }
+  dp.hidden = settings.manualMode || gameOver() || !isMyTurn();
 }
 function calcRow(label, fn, clsFn) {
   let html = `<tr class="calc-row"><td class="row-label">${label}</td>`;
@@ -440,12 +483,7 @@ function openEntry(pid, key) {
   else if (SUM_LOWER_KEYS.includes(key)) buildSumPicker(pid, key, f);
   else buildFixedPicker(pid, key, f);
 
-  if (p.scores[key] != null) {
-    const clr = document.createElement('button');
-    clr.className = 'btn btn--ghost'; clr.textContent = 'Eintrag löschen';
-    clr.addEventListener('click', () => commitEntry(pid, key, null));
-    modalActions.appendChild(clr);
-  }
+  // Kein „Löschen" – einmal eingetragene Felder bleiben stehen (kein Überschreiben).
   modal.hidden = false;
 }
 
@@ -586,4 +624,5 @@ document.getElementById('btnLeave').addEventListener('click', () => {
 
 // Für Tests zugänglich machen
 window.__mp = { get game() { return game; }, hostApply, computeTotals, scoreFor, afterHostChange, renderBoard,
+  currentPlayer, gameOver, isSheetFull, advanceTurn,
   setGame(g) { game = g; }, setHost(v) { isHost = v; }, deviceId };

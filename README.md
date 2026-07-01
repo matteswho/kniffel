@@ -44,6 +44,12 @@ spielt am eigenen Gerät, alle sehen die Punkte aller Mitspieler live.
 - **Mitspieler** öffnen die Seite, wählen „Beitreten", geben Code + Namen ein.
 - Gemeinsame Tabelle: **Zeilen = Felder, Spalten = Spieler**. Jedes Gerät bearbeitet
   nur die **eigene** Spalte, die anderen aktualisieren sich automatisch.
+- **Reihum-Modus**: Die Spieler sind der Reihe nach dran. Nur die Spalte des Spielers,
+  der **gerade am Zug** ist, lässt sich bearbeiten (▶ markiert, Banner „Du bist dran").
+  Nach einem Eintrag wechselt der Zug automatisch zum nächsten Spieler.
+- **Kein Überschreiben**: Ein einmal eingetragenes (oder gestrichenes) Feld ist
+  gesperrt und kann nicht geändert werden. Sind alle Felder voll, zeigt die App den
+  **Gewinner**.
 - **Würfeln am Handy**: Jedes Gerät hat einen eigenen Würfelbereich (bis zu 3 Würfe,
   Würfel halten) wie in der Einzel-Version. Über ⚙ Einstellungen kann man auf den
   **manuellen Modus** (eigene, echte Würfel) umschalten.
