@@ -294,7 +294,7 @@ function renderSheet() {
   UPPER_FIELDS.forEach(f => { html += fieldRow(f, true); });
 
   // Zwischensumme oben
-  html += calcRow('Zwischensumme', c => {
+  html += calcRow('Zw.-Summe', c => {
     const t = columnTotals(c);
     return `${t.upper}<span class="sub">von 63</span>`;
   });

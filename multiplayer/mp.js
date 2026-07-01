@@ -375,7 +375,7 @@ function renderBoard() {
 
   html += sectionRow('Oberer Teil', players.length);
   UPPER_FIELDS.forEach(f => { html += fieldRow(f); });
-  html += calcRow('Zwischensumme', p => `${computeTotals(p.scores).upper}<span class="sub">/63</span>`);
+  html += calcRow('Zw.-Summe', p => `${computeTotals(p.scores).upper}<span class="sub">/63</span>`);
   html += calcRow('Bonus', p => { const t = computeTotals(p.scores); return t.bonus ? '+35' : `<span class="sub">noch ${t.remaining}</span>`; },
     p => computeTotals(p.scores).bonus ? 'bonus-ok' : 'bonus-miss');
   html += sectionRow('Unterer Teil', players.length);
