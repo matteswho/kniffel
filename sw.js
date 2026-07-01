@@ -1,5 +1,5 @@
 /* Einfacher Offline-Cache für die Kniffel-App */
-const CACHE = 'kniffel-v4';
+const CACHE = 'kniffel-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,10 @@ const ASSETS = [
   './app.js',
   './manifest.webmanifest',
   './icon.svg',
+  './multiplayer/index.html',
+  './multiplayer/mp.css',
+  './multiplayer/mp.js',
+  './multiplayer/vendor/peerjs.min.js',
 ];
 
 self.addEventListener('install', (e) => {

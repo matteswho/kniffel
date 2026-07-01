@@ -233,6 +233,7 @@ body {
 .grand-row .row-label { font-size: 14px; }
 
 .footer-note { margin: 18px 6px 0; font-size: 12px; color: var(--text-dim); text-align: center; line-height: 1.5; }
+.mode-link { display: inline-block; margin-top: 4px; color: var(--accent); font-weight: 600; text-decoration: none; }
 
 /* ---------- Modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }

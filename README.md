@@ -34,6 +34,22 @@ Erreichst du im oberen Teil einer Spalte mindestens **63 Punkte**, gibt es
    automatisch.
 4. Spalte frei wählbar – verteile clever auf alle drei.
 
+## Mehrspieler-Version (V2)
+
+Unter `multiplayer/` liegt eine zweite Version für **mehrere Handys**: Jede Person
+spielt am eigenen Gerät, alle sehen die Punkte aller Mitspieler live.
+
+- Der **Spielleiter** tippt auf „Spiel leiten", bekommt einen kurzen **Code** und
+  fügt bei Bedarf Spieler hinzu.
+- **Mitspieler** öffnen die Seite, wählen „Beitreten", geben Code + Namen ein.
+- Gemeinsame Tabelle: **Zeilen = Felder, Spalten = Spieler**. Jedes Gerät bearbeitet
+  nur die **eigene** Spalte, die anderen aktualisieren sich automatisch.
+
+Die Synchronisation läuft **ohne Konto** direkt zwischen den Geräten über WebRTC
+(PeerJS-Broker als Signalisierung). Das Handy des Spielleiters ist der „Host" und
+sollte während des Spiels online bleiben. Es wird eine aktive Internetverbindung
+auf allen Geräten benötigt.
+
 ## Lokal starten
 
 Einfach `index.html` im Browser öffnen. Für die PWA-/Offline-Funktion über einen

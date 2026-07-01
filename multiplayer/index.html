@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f1419" />
+  <meta name="description" content="Kniffel Mehrspieler – jeder am eigenen Handy, Punkte aller sichtbar." />
+  <title>Kniffel · Mehrspieler</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="stylesheet" href="mp.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__title">
+      <span class="app-header__dice">🎲</span>
+      <h1>Kniffel · Mehrspieler</h1>
+    </div>
+    <span id="connBadge" class="conn-badge conn-badge--off" title="Verbindung">offline</span>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Startbildschirm -->
+    <section class="screen" id="screen-home">
+      <p class="lead">Spielt gemeinsam – jede Person am eigenen Handy. Der Spielleiter
+        erstellt ein Spiel und teilt den Code. Alle sehen die Punkte aller Mitspieler.</p>
+      <button class="btn btn--accent btn--big" id="btnHostStart" type="button">🎯 Spiel leiten</button>
+      <button class="btn btn--ghost btn--big" id="btnJoinStart" type="button">🙋 Beitreten</button>
+      <p class="footer-note"><a href="../index.html">← Zurück zur Einzel-Version</a></p>
+    </section>
+
+    <!-- Host: Spiel erstellen -->
+    <section class="screen" id="screen-host" hidden>
+      <h2>Spiel leiten</h2>
+      <label class="field">Dein Name
+        <input type="text" id="hostName" maxlength="16" placeholder="z. B. Mattes" />
+      </label>
+      <button class="btn btn--accent btn--big" id="btnCreate" type="button">Spiel erstellen</button>
+      <button class="btn btn--ghost" id="btnHostBack" type="button">Abbrechen</button>
+    </section>
+
+    <!-- Gast: beitreten -->
+    <section class="screen" id="screen-join" hidden>
+      <h2>Beitreten</h2>
+      <label class="field">Spiel-Code
+        <input type="text" id="joinCode" maxlength="6" autocapitalize="characters" placeholder="z. B. 7K2Q" />
+      </label>
+      <label class="field">Dein Name
+        <input type="text" id="joinName" maxlength="16" placeholder="z. B. Anna" />
+      </label>
+      <button class="btn btn--accent btn--big" id="btnJoin" type="button">Verbinden</button>
+      <button class="btn btn--ghost" id="btnJoinBack" type="button">Abbrechen</button>
+      <p class="hint" id="joinHint"></p>
+    </section>
+
+    <!-- Spielbrett -->
+    <section class="screen" id="screen-board" hidden>
+      <div class="board-bar">
+        <div class="code-box">
+          <span class="code-box__label">Code</span>
+          <span class="code-box__code" id="gameCode">----</span>
+        </div>
+        <div class="board-bar__actions">
+          <button class="btn btn--ghost btn--sm" id="btnAddPlayer" type="button" hidden>+ Spieler</button>
+          <button class="btn btn--ghost btn--sm" id="btnLeave" type="button">Verlassen</button>
+        </div>
+      </div>
+      <p class="hint" id="boardHint"></p>
+      <div class="sheet">
+        <table class="sheet-table" id="boardTable"></table>
+      </div>
+      <p class="footer-note">Du bearbeitest nur deine eigene Spalte. Die anderen aktualisieren sich automatisch.</p>
+    </section>
+  </main>
+
+  <!-- Eingabe-Dialog -->
+  <div class="modal" id="cellModal" hidden>
+    <div class="modal__backdrop" id="modalBackdrop"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true">
+      <h3 class="modal__title" id="modalTitle">Eintragen</h3>
+      <p class="modal__sub" id="modalSub"></p>
+      <div class="modal__picker" id="modalPicker"></div>
+      <div class="modal__actions" id="modalActions"></div>
+      <div class="modal__manual">
+        <input type="number" inputmode="numeric" id="manualInput" placeholder="Eigener Wert" min="0" max="375" />
+        <button class="btn btn--accent" id="manualOk" type="button">OK</button>
+      </div>
+      <button class="btn btn--ghost modal__cancel" id="modalCancel" type="button">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Spieler-hinzufügen-Dialog -->
+  <div class="modal" id="addModal" hidden>
+    <div class="modal__backdrop" id="addBackdrop"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true">
+      <h3 class="modal__title">Spieler hinzufügen</h3>
+      <p class="modal__sub">Für Mitspieler ohne Handy – oder als Platzhalter, den sie beim Beitreten übernehmen.</p>
+      <div class="modal__manual">
+        <input type="text" id="addName" maxlength="16" placeholder="Name" />
+        <button class="btn btn--accent" id="addOk" type="button">OK</button>
+      </div>
+      <button class="btn btn--ghost modal__cancel" id="addCancel" type="button">Fertig</button>
+    </div>
+  </div>
+
+  <script src="vendor/peerjs.min.js"></script>
+  <script src="mp.js"></script>
+</body>
+</html>
