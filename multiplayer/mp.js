@@ -78,6 +78,21 @@ let peer = null;        // PeerJS-Instanz
 let conn = null;        // Gast: Verbindung zum Host
 const conns = {};       // Host: deviceId -> DataConnection
 
+// Lokaler Würfel-Zustand (pro Gerät, nicht synchronisiert) – wie in V1
+const MAX_ROLLS = 3;
+let rollsUsed = 0;
+let held = [false, false, false, false, false];
+let dice = [1, 2, 3, 4, 5];
+const hasRolled = () => rollsUsed > 0;
+
+// Lokale Einstellungen (Würfel- vs. manueller Modus)
+const MP_SETTINGS_KEY = 'kniffel-mp-settings';
+let settings = (() => {
+  try { const r = localStorage.getItem(MP_SETTINGS_KEY); if (r) return Object.assign({ manualMode: false }, JSON.parse(r)); } catch (e) {}
+  return { manualMode: false };
+})();
+function saveSettings() { try { localStorage.setItem(MP_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {} }
+
 function newPlayer(name, owner = null) { return { pid: rid(), name: name || 'Spieler', owner, scores: emptyScores() }; }
 function playerById(pid) { return game && game.players.find(p => p.pid === pid); }
 function myPlayer() { return game && game.players.find(p => p.owner === deviceId); }
@@ -239,6 +254,69 @@ function showBoard() {
   showScreen('screen-board');
   document.getElementById('gameCode').textContent = game ? game.code : '----';
   document.getElementById('btnAddPlayer').hidden = !isHost;
+  document.getElementById('settingsBtn').hidden = false;
+  applyMode();
+}
+
+// ---------------- UI: Würfelbereich (lokal, pro Gerät) ----------------
+function renderDice() {
+  const diceRow = document.getElementById('diceRow');
+  diceRow.innerHTML = '';
+  const rolled = hasRolled();
+  dice.forEach((v, i) => {
+    let die;
+    if (!rolled) { die = document.createElement('div'); die.className = 'die die--empty'; die.textContent = '?'; }
+    else { die = buildDie(v); if (held[i]) die.classList.add('held'); }
+    die.dataset.i = i;
+    die.addEventListener('click', () => onDieClick(i));
+    diceRow.appendChild(die);
+  });
+}
+function onDieClick(i) {
+  if (rollsUsed === 0 || rollsUsed >= MAX_ROLLS) return;
+  held[i] = !held[i];
+  renderDice();
+}
+function rollDice() {
+  if (rollsUsed >= MAX_ROLLS) return;
+  rollsUsed++;
+  const first = rollsUsed === 1;
+  document.querySelectorAll('#diceRow .die').forEach((el, i) => { if (first || !held[i]) el.classList.add('is-rolling'); });
+  let ticks = 0;
+  const iv = setInterval(() => {
+    for (let i = 0; i < 5; i++) if (first || !held[i]) dice[i] = 1 + Math.floor(Math.random() * 6);
+    renderDice();
+    if (++ticks >= 6) { clearInterval(iv); updateControls(); renderBoard(); }
+  }, 70);
+}
+function nextRound() {
+  rollsUsed = 0;
+  held = [false, false, false, false, false];
+  renderDice();
+  updateControls();
+  renderBoard();
+}
+function updateControls() {
+  const remaining = MAX_ROLLS - rollsUsed;
+  const rollBtn = document.getElementById('rollBtn');
+  const status = document.getElementById('rollStatus');
+  if (remaining > 0) {
+    rollBtn.disabled = false;
+    rollBtn.textContent = rollsUsed === 0 ? '🎲 Würfeln' : `🎲 Nochmal (${remaining})`;
+  } else { rollBtn.disabled = true; rollBtn.textContent = 'Keine Würfe mehr'; }
+  status.textContent = [
+    'Bereit – tippe „Würfeln"',
+    '1. Wurf · Würfel antippen zum Halten',
+    '2. Wurf · Würfel antippen zum Halten',
+    '3. Wurf · jetzt in deine Spalte eintragen',
+  ][rollsUsed];
+}
+
+// Würfel- vs. manueller Modus anwenden
+function applyMode() {
+  document.getElementById('manualToggle').checked = settings.manualMode;
+  document.getElementById('dicePanel').hidden = settings.manualMode;
+  if (!settings.manualMode) { renderDice(); updateControls(); }
 }
 
 // ---------------- UI: Verbindungsstatus ----------------
@@ -305,6 +383,7 @@ function fieldRow(f) {
     let cls = 'cell' + (editable ? ' editable' : '') + (p.owner === deviceId ? ' col-you' : '');
     let inner = '';
     if (v != null) { if (v === 0) cls += ' struck'; inner = v === 0 ? '✕' : v; }
+    else if (editable && !settings.manualMode && hasRolled()) inner = `<span class="tap ghost">${scoreFor(f.key, dice)}</span>`;
     else if (editable) inner = '<span class="tap">+</span>';
     html += `<td class="${cls}" data-pid="${p.pid}" data-key="${f.key}">${inner}</td>`;
   });
@@ -355,7 +434,9 @@ function openEntry(pid, key) {
   modalTitle.textContent = `${f.label} – ${p.name}`;
   modalPicker.innerHTML = ''; modalActions.innerHTML = ''; manualInput.value = '';
 
-  if (UPPER_KEYS.includes(key)) buildUpperPicker(pid, key, f);
+  if (!settings.manualMode) {
+    buildDiceEntry(pid, key, f);
+  } else if (UPPER_KEYS.includes(key)) buildUpperPicker(pid, key, f);
   else if (SUM_LOWER_KEYS.includes(key)) buildSumPicker(pid, key, f);
   else buildFixedPicker(pid, key, f);
 
@@ -406,9 +487,22 @@ function buildFixedPicker(pid, key, f) {
   modalActions.appendChild(makeStrike(pid, key));
 }
 
+// Würfel-Modus: den auf dem Handy gewürfelten Wurf übernehmen.
+function buildDiceEntry(pid, key, f) {
+  const rolled = hasRolled();
+  const ghost = scoreFor(key, dice);
+  modalSub.textContent = rolled
+    ? `Dein Wurf ergibt hier ${ghost} Punkte.`
+    : 'Noch nicht gewürfelt – oben würfeln oder von Hand eintragen.';
+  if (rolled) addBtn('btn--accent', `Würfel eintragen: ${ghost} Punkte`, () => commitEntry(pid, key, ghost));
+  modalActions.appendChild(makeStrike(pid, key));
+}
+
 function commitEntry(pid, key, value) {
   editCell(pid, key, value);
   closeModal();
+  // Im Würfel-Modus beendet ein Eintrag die Runde → neuer Wurf
+  if (!settings.manualMode && value !== null) nextRound();
 }
 function closeModal() { modal.hidden = true; modalPicker.innerHTML = ''; entryTarget = null; }
 
@@ -432,11 +526,26 @@ document.getElementById('addOk').addEventListener('click', () => {
   document.getElementById('addName').focus();
 });
 
+// ---------------- UI: Einstellungen (Würfel- vs. manueller Modus) ----------------
+const settingsModal = document.getElementById('settingsModal');
+document.getElementById('settingsBtn').addEventListener('click', () => { settingsModal.hidden = false; });
+document.getElementById('settingsBackdrop').addEventListener('click', () => settingsModal.hidden = true);
+document.getElementById('settingsClose').addEventListener('click', () => settingsModal.hidden = true);
+document.getElementById('manualToggle').addEventListener('change', (e) => {
+  settings.manualMode = e.target.checked;
+  saveSettings();
+  applyMode();
+  renderBoard();
+});
+
 // ---------------- UI: Navigation ----------------
 document.getElementById('btnHostStart').addEventListener('click', () => { showScreen('screen-host'); document.getElementById('hostName').focus(); });
 document.getElementById('btnJoinStart').addEventListener('click', () => { showScreen('screen-join'); });
 document.getElementById('btnHostBack').addEventListener('click', () => showScreen('screen-home'));
 document.getElementById('btnJoinBack').addEventListener('click', () => showScreen('screen-home'));
+
+document.getElementById('rollBtn').addEventListener('click', rollDice);
+document.getElementById('nextRoundBtn').addEventListener('click', nextRound);
 
 document.getElementById('btnCreate').addEventListener('click', () => {
   const name = document.getElementById('hostName').value.trim() || 'Spielleiter';
@@ -453,8 +562,10 @@ document.getElementById('btnLeave').addEventListener('click', () => {
   try { if (peer) peer.destroy(); } catch (e) {}
   peer = null; conn = null; game = null; isHost = false; myPid = null;
   for (const k in conns) delete conns[k];
+  rollsUsed = 0; held = [false, false, false, false, false];
   clearSession();
   setStatus('offline');
+  document.getElementById('settingsBtn').hidden = true;
   showScreen('screen-home');
 });
 

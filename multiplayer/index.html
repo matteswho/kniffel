@@ -17,7 +17,10 @@
       <span class="app-header__dice">🎲</span>
       <h1>Kniffel · Mehrspieler</h1>
     </div>
-    <span id="connBadge" class="conn-badge conn-badge--off" title="Verbindung">offline</span>
+    <div class="app-header__right">
+      <button id="settingsBtn" class="icon-btn" type="button" title="Einstellungen" aria-label="Einstellungen" hidden>⚙</button>
+      <span id="connBadge" class="conn-badge conn-badge--off" title="Verbindung">offline</span>
+    </div>
   </header>
 
   <main class="app-main">
@@ -68,6 +71,18 @@
         </div>
       </div>
       <p class="hint" id="boardHint"></p>
+
+      <!-- Würfelbereich für den eigenen Zug (nur im Würfel-Modus) -->
+      <section class="dice-panel" id="dicePanel" aria-label="Würfel">
+        <div class="round-info"><span id="rollStatus">Bereit – tippe „Würfeln"</span></div>
+        <div class="dice-row" id="diceRow"></div>
+        <div class="dice-actions">
+          <button id="rollBtn" class="btn btn--accent" type="button">🎲 Würfeln</button>
+          <button id="nextRoundBtn" class="btn btn--ghost" type="button">🔄 Nächste Runde</button>
+        </div>
+        <p class="dice-hint">Bis zu 3 Würfe · nach dem Wurf Würfel antippen zum Halten · dann in deine Spalte eintragen.</p>
+      </section>
+
       <div class="sheet">
         <table class="sheet-table" id="boardTable"></table>
       </div>
@@ -102,6 +117,25 @@
         <button class="btn btn--accent" id="addOk" type="button">OK</button>
       </div>
       <button class="btn btn--ghost modal__cancel" id="addCancel" type="button">Fertig</button>
+    </div>
+  </div>
+
+  <!-- Einstellungen -->
+  <div class="modal" id="settingsModal" hidden>
+    <div class="modal__backdrop" id="settingsBackdrop"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true">
+      <h3 class="modal__title">Einstellungen</h3>
+      <label class="switch-row" for="manualToggle">
+        <span class="switch-row__text">
+          <strong>Manueller Modus</strong>
+          <small>Eigene Würfel: ohne digitalen Würfelbereich, Werte direkt in der Zelle wählen.</small>
+        </span>
+        <span class="switch">
+          <input type="checkbox" id="manualToggle" />
+          <span class="switch__slider"></span>
+        </span>
+      </label>
+      <button class="btn btn--accent modal__cancel" id="settingsClose" type="button">Fertig</button>
     </div>
   </div>
 

@@ -108,4 +108,37 @@ a { color: var(--accent); }
 .die[data-v="5"] .pip:nth-child(1){grid-area:1/1;} .die[data-v="5"] .pip:nth-child(2){grid-area:1/3;} .die[data-v="5"] .pip:nth-child(3){grid-area:2/2;} .die[data-v="5"] .pip:nth-child(4){grid-area:3/1;} .die[data-v="5"] .pip:nth-child(5){grid-area:3/3;}
 .die[data-v="6"] .pip:nth-child(1){grid-area:1/1;} .die[data-v="6"] .pip:nth-child(2){grid-area:1/3;} .die[data-v="6"] .pip:nth-child(3){grid-area:2/1;} .die[data-v="6"] .pip:nth-child(4){grid-area:2/3;} .die[data-v="6"] .pip:nth-child(5){grid-area:3/1;} .die[data-v="6"] .pip:nth-child(6){grid-area:3/3;}
 
+/* Header-Aktionen + Zahnrad */
+.app-header__right { display: flex; align-items: center; gap: 8px; }
+.icon-btn { background: var(--bg-elev-2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; width: 38px; height: 38px; font-size: 18px; cursor: pointer; }
+.icon-btn:active { background: var(--line); }
+.icon-btn[hidden] { display: none; }
+
+/* Würfelbereich */
+.dice-panel { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 12px; box-shadow: var(--shadow); margin: 12px 0 4px; }
+.dice-panel[hidden] { display: none; }
+.round-info { text-align: center; margin-bottom: 12px; }
+#rollStatus { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+.dice-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+.dice-actions { display: flex; gap: 10px; }
+.dice-actions .btn { flex: 1; width: auto; margin: 0; }
+.dice-hint { margin: 10px 2px 0; font-size: 12px; color: var(--text-dim); text-align: center; }
+.die--empty { display: flex; align-items: center; justify-content: center; padding: 0; color: var(--text-dim); font-size: 26px; font-weight: 700; border-style: dashed; }
+.die.held { border-color: var(--good); box-shadow: inset 0 0 0 2px var(--good); background: rgba(88,214,141,0.12); }
+.die.is-rolling { animation: shake 0.4s ease; }
+@keyframes shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-9deg) scale(1.05); } 75% { transform: rotate(9deg) scale(1.05); } }
+.cell .ghost { color: var(--ghost); font-weight: 600; }
+
+/* Einstellungen: Toggle */
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0 18px; }
+.switch-row__text { display: flex; flex-direction: column; gap: 3px; }
+.switch-row__text strong { font-size: 15px; }
+.switch-row__text small { font-size: 12px; color: var(--text-dim); line-height: 1.35; }
+.switch { position: relative; flex: 0 0 52px; width: 52px; height: 30px; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch__slider { position: absolute; inset: 0; background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 999px; transition: background 0.18s ease; pointer-events: none; }
+.switch__slider::before { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--text); transition: transform 0.18s ease; }
+.switch input:checked + .switch__slider { background: var(--accent-strong); border-color: var(--accent-strong); }
+.switch input:checked + .switch__slider::before { transform: translateX(22px); background: #062534; }
+
 @media (min-width: 600px) { .modal { align-items: center; } .modal__sheet { border-radius: 18px; } }

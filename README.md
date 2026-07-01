@@ -44,6 +44,9 @@ spielt am eigenen Gerät, alle sehen die Punkte aller Mitspieler live.
 - **Mitspieler** öffnen die Seite, wählen „Beitreten", geben Code + Namen ein.
 - Gemeinsame Tabelle: **Zeilen = Felder, Spalten = Spieler**. Jedes Gerät bearbeitet
   nur die **eigene** Spalte, die anderen aktualisieren sich automatisch.
+- **Würfeln am Handy**: Jedes Gerät hat einen eigenen Würfelbereich (bis zu 3 Würfe,
+  Würfel halten) wie in der Einzel-Version. Über ⚙ Einstellungen kann man auf den
+  **manuellen Modus** (eigene, echte Würfel) umschalten.
 
 Die Synchronisation läuft **ohne Konto** direkt zwischen den Geräten über WebRTC
 (PeerJS-Broker als Signalisierung). Das Handy des Spielleiters ist der „Host" und
