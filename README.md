@@ -55,9 +55,16 @@ spielt am eigenen Gerät, alle sehen die Punkte aller Mitspieler live.
   **manuellen Modus** (eigene, echte Würfel) umschalten.
 
 Die Synchronisation läuft **ohne Konto** direkt zwischen den Geräten über WebRTC
-(PeerJS-Broker als Signalisierung). Das Handy des Spielleiters ist der „Host" und
-sollte während des Spiels online bleiben. Es wird eine aktive Internetverbindung
-auf allen Geräten benötigt.
+(PeerJS-Broker als Signalisierung, öffentliche STUN/TURN-Server für den
+Verbindungsaufbau). Das Handy des Spielleiters ist der „Host" und sollte während
+des Spiels online und die Seite geöffnet bleiben. Es wird eine aktive
+Internetverbindung auf allen Geräten benötigt.
+
+**Wenn das Verbinden hängt:** Am zuverlässigsten sind alle Geräte im **selben
+WLAN**. Bleibt es auf „verbinde …", erscheint nach 20 s ein Hinweis samt Button
+**„Erneut verbinden"**. Prüfe, ob der Code stimmt und das Leiter-Handy die Seite
+geöffnet hat. In manchen Mobilfunknetzen kann der direkte Aufbau trotz TURN
+scheitern – dann WLAN nutzen.
 
 ## Lokal starten
 

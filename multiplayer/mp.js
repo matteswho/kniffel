@@ -196,12 +196,17 @@ function broadcast() {
 }
 
 // ---------------- Sync: Gast ----------------
+let lastJoin = null;        // { code, name } für „Erneut verbinden"
+let connectTimer = null;    // Timeout-Wächter für den Verbindungsaufbau
+
 function startGuest(code, name) {
   isHost = false;
   game = null;
+  lastJoin = { code, name };
   showBoard();
   setStatus('connecting');
   document.getElementById('boardHint').textContent = 'Verbinde mit Spiel ' + code + ' …';
+  armConnectTimeout();
   if (peer) { try { peer.destroy(); } catch (e) {} }
   peer = new Peer(peerOpts());
   peer.on('open', () => {
@@ -214,6 +219,7 @@ function startGuest(code, name) {
 
 function wireGuestConn(name) {
   conn.on('open', () => {
+    clearTimeout(connectTimer);
     setStatus('online');
     conn.send({ type: 'join', deviceId, name });
   });
@@ -226,7 +232,20 @@ function wireGuestConn(name) {
     }
   });
   conn.on('close', () => setStatus('offline'));
-  conn.on('error', () => setStatus('error'));
+  conn.on('error', (e) => setStatus('error', e && e.type));
+}
+
+// Wenn nach 20 s keine Verbindung steht: klare Meldung statt ewigem „verbinde".
+function armConnectTimeout() {
+  clearTimeout(connectTimer);
+  connectTimer = setTimeout(() => {
+    if (!(conn && conn.open)) setStatus('error', 'timeout');
+  }, 20000);
+}
+
+function retryConnect() {
+  if (isHost) { connectHostPeer(); }
+  else if (lastJoin) { startGuest(lastJoin.code, lastJoin.name); }
 }
 
 // Gast/Host: eine Zelle setzen
@@ -243,7 +262,15 @@ function editCell(pid, key, value) {
 }
 
 // ---------------- PeerJS-Optionen / Code ----------------
-function peerOpts() { return { debug: 1 }; }
+// STUN für die NAT-Erkennung + kostenlose TURN-Relays, falls eine direkte
+// Verbindung (z. B. im Mobilfunknetz) nicht möglich ist.
+const ICE_SERVERS = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+];
+function peerOpts() { return { debug: 1, config: { iceServers: ICE_SERVERS } }; }
 
 function genCode() {
   const alph = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ohne 0/O/1/I
@@ -340,6 +367,19 @@ function applyMode() {
 }
 
 // ---------------- UI: Verbindungsstatus ----------------
+function errorHint(detail) {
+  switch (detail) {
+    case 'peer-unavailable':
+      return 'Kein Spiel mit diesem Code gefunden. Prüfe den Code und dass das Leiter-Handy die Seite geöffnet lässt.';
+    case 'timeout':
+      return 'Keine Verbindung nach 20 s. Am besten sind alle im selben WLAN. Auf „Erneut verbinden" tippen.';
+    case 'network':
+    case 'server-error':
+      return 'Verbindungsserver nicht erreichbar. Internet prüfen und erneut verbinden.';
+    default:
+      return 'Verbindung fehlgeschlagen' + (detail ? ' (' + detail + ')' : '') + '. Erneut verbinden oder Code prüfen.';
+  }
+}
 function setStatus(state, detail) {
   const badge = document.getElementById('connBadge');
   const map = {
@@ -352,8 +392,12 @@ function setStatus(state, detail) {
   badge.className = 'conn-badge ' + cls;
   badge.textContent = text;
   const hint = document.getElementById('boardHint');
-  if (state === 'error') hint.textContent = 'Verbindung fehlgeschlagen' + (detail ? ' (' + detail + ')' : '') + '. Prüfe den Code / Internet und versuche es erneut.';
+  const retryBtn = document.getElementById('btnRetry');
+  if (state === 'error') hint.textContent = errorHint(detail);
   else if (state === 'online') hint.textContent = isHost ? 'Teile den Code – Mitspieler treten damit bei.' : 'Verbunden. Tippe in deine Spalte, um einzutragen.';
+  else if (state === 'offline') hint.textContent = 'Verbindung getrennt.';
+  // Retry-Button bei Fehler/Trennung zeigen
+  if (retryBtn) retryBtn.hidden = !(state === 'error' || state === 'offline');
 }
 
 // ---------------- UI: Spielbrett rendern ----------------
@@ -584,6 +628,7 @@ document.getElementById('btnJoinBack').addEventListener('click', () => showScree
 
 document.getElementById('rollBtn').addEventListener('click', rollDice);
 document.getElementById('nextRoundBtn').addEventListener('click', nextRound);
+document.getElementById('btnRetry').addEventListener('click', () => { document.getElementById('btnRetry').hidden = true; retryConnect(); });
 
 document.getElementById('btnCreate').addEventListener('click', () => {
   const name = document.getElementById('hostName').value.trim() || 'Spielleiter';
@@ -597,13 +642,15 @@ document.getElementById('btnJoin').addEventListener('click', () => {
 });
 document.getElementById('btnLeave').addEventListener('click', () => {
   if (!confirm('Spiel verlassen?')) return;
+  clearTimeout(connectTimer);
   try { if (peer) peer.destroy(); } catch (e) {}
-  peer = null; conn = null; game = null; isHost = false; myPid = null;
+  peer = null; conn = null; game = null; isHost = false; myPid = null; lastJoin = null;
   for (const k in conns) delete conns[k];
   rollsUsed = 0; held = [false, false, false, false, false];
   clearSession();
   setStatus('offline');
   document.getElementById('settingsBtn').hidden = true;
+  document.getElementById('btnRetry').hidden = true;
   showScreen('screen-home');
 });
 
